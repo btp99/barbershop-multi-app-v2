@@ -1,0 +1,9 @@
+{
+  "extends": "@barberlab/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "skipLibCheck": true
+  },
+  "include": ["src/utils.ts"],
+  "exclude": ["node_modules", "dist"]
+}
