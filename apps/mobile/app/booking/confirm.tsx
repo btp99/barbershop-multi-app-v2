@@ -1,70 +1,101 @@
-import { useEffect, useState } from "react"
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from "react-native"
+import { useEffect, useState, useMemo } from "react"
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { trpc } from "../../lib/trpc"
-import { format } from "date-fns"
+import { isBefore, startOfDay, format } from "date-fns"
 import { pt } from "date-fns/locale"
-
-function minutesToTime(mins: number) {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
-}
+import { trpc } from "../../lib/trpc"
+import { Calendar } from "../../components/Calendar"
+import { formatPrice, formatDuration } from "@barberlab/ui"
 
 function timeToMinutes(t: string) {
   const [h, m] = t.split(":").map(Number)
   return h * 60 + m
 }
+function minutesToTime(mins: number) {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
+}
+function localDateStr(d: Date) {
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-")
+}
 
 interface Slot { time: string; available: boolean }
+interface Service { id: string; name: string; duration: number; price: number }
 
 export default function BookingConfirmScreen() {
   const { barbershopId, serviceId } = useLocalSearchParams<{ barbershopId: string; serviceId: string }>()
-  const [service, setService] = useState<{ name: string; duration: number } | null>(null)
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [service, setService] = useState<Service | null>(null)
+  const [date, setDate] = useState<Date | undefined>(undefined)
   const [slots, setSlots] = useState<Slot[]>([])
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [closedDays, setClosedDays] = useState<number[]>([])
   const [booking, setBooking] = useState(false)
   const router = useRouter()
 
+  // Load service info + closed days
   useEffect(() => {
-    if (barbershopId) {
+    if (!barbershopId) return
+    void Promise.all([
       trpc.barbershop.getById.query({ id: barbershopId }).then((bs) => {
         const svc = bs?.services.find((s) => s.id === serviceId)
-        if (svc) setService({ name: svc.name, duration: svc.duration })
-      })
-    }
+        if (svc) setService({ id: svc.id, name: svc.name, duration: svc.duration, price: Number(svc.price) })
+      }),
+      trpc.slots.getClosedDays.query().then((d) => setClosedDays(d.closedDaysOfWeek)),
+    ])
   }, [barbershopId, serviceId])
 
+  // Load slots whenever date changes
   useEffect(() => {
-    if (!service) return
+    if (!date || !service) return
     setSlotsLoading(true)
     setSelectedSlot(null)
-    trpc.slots.getSlots.query({ date, duration: service.duration }).then((r) => {
-      setSlots(r.slots)
-      setSlotsLoading(false)
-    })
+    trpc.slots.getSlots
+      .query({ date: localDateStr(date), duration: service.duration })
+      .then((r) => setSlots(r.slots))
+      .catch(() => setSlots([]))
+      .finally(() => setSlotsLoading(false))
   }, [date, service])
 
-  const today = new Date().toISOString().split("T")[0]
+  // Filter out past slots when today is selected
+  const availableSlots = useMemo(() => {
+    return slots.filter((s) => {
+      if (!s.available) return false
+      if (date && localDateStr(date) === localDateStr(new Date())) {
+        const now = new Date()
+        return timeToMinutes(s.time) >= now.getHours() * 60 + now.getMinutes() + 15
+      }
+      return true
+    })
+  }, [slots, date])
 
-  const changeDate = (delta: number) => {
-    const d = new Date(date + "T00:00:00")
-    d.setDate(d.getDate() + delta)
-    const next = d.toISOString().split("T")[0]
-    if (next >= today) setDate(next)
-  }
+  // Group by hour, sorted
+  const groupedSlots = useMemo(() => {
+    const acc: Record<string, Slot[]> = {}
+    for (const s of availableSlots) {
+      const h = s.time.split(":")[0]
+      ;(acc[h] ??= []).push(s)
+    }
+    return Object.entries(acc).sort(([a], [b]) => parseInt(a) - parseInt(b))
+  }, [availableSlots])
 
   const handleBook = async () => {
-    if (!selectedSlot || !service) return
+    if (!selectedSlot || !service || !date) return
     setBooking(true)
     try {
-      const start = timeToMinutes(selectedSlot)
-      const end = start + service.duration
+      const end = minutesToTime(timeToMinutes(selectedSlot) + service.duration)
       await trpc.booking.create.mutate({
-        date: new Date(date),
-        services: [{ serviceId: serviceId!, startTime: selectedSlot, endTime: minutesToTime(end) }],
+        date,
+        services: [{ serviceId: service.id, startTime: selectedSlot, endTime: end }],
       })
       Alert.alert("Agendamento confirmado!", "O teu agendamento foi realizado com sucesso.", [
         { text: "OK", onPress: () => router.push("/(tabs)/bookings") },
@@ -81,83 +112,178 @@ export default function BookingConfirmScreen() {
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{service.name}</Text>
-
-      {/* Date picker */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Data</Text>
-        <View style={styles.dateRow}>
-          <TouchableOpacity style={styles.arrow} onPress={() => changeDate(-1)} disabled={date === today}>
-            <Text style={[styles.arrowText, date === today && styles.disabled]}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.dateText}>
-            {format(new Date(date + "T00:00:00"), "EEEE, d 'de' MMMM", { locale: pt })}
+    <>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* Service summary */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.serviceName}>{service.name}</Text>
+          <Text style={styles.serviceMeta}>
+            {formatDuration(service.duration)} · {formatPrice(service.price)}
           </Text>
-          <TouchableOpacity style={styles.arrow} onPress={() => changeDate(1)}>
-            <Text style={styles.arrowText}>›</Text>
-          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Slots */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Horário</Text>
-        {slotsLoading ? (
-          <ActivityIndicator color="#18B549" style={{ marginTop: 16 }} />
-        ) : slots.length === 0 ? (
-          <Text style={styles.empty}>Sem horários disponíveis.</Text>
-        ) : (
-          <View style={styles.grid}>
-            {slots.map((slot) => (
-              <TouchableOpacity
-                key={slot.time}
-                disabled={!slot.available}
-                onPress={() => setSelectedSlot(slot.time)}
-                style={[
-                  styles.slot,
-                  !slot.available && styles.slotDisabled,
-                  selectedSlot === slot.time && styles.slotSelected,
-                ]}
-              >
-                <Text style={[styles.slotText, !slot.available && styles.slotTextDisabled, selectedSlot === slot.time && styles.slotTextSelected]}>
-                  {slot.time}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* Calendar */}
+        <Text style={styles.sectionLabel}>Escolhe um dia</Text>
+        <Calendar
+          selected={date}
+          onSelect={(d) => {
+            setDate(d)
+            setSelectedSlot(null)
+          }}
+          disabled={(d) =>
+            isBefore(d, startOfDay(new Date())) || closedDays.includes(d.getDay())
+          }
+        />
+
+        {/* Time slots */}
+        {date && (
+          <View style={styles.slotsSection}>
+            <Text style={styles.sectionLabel}>
+              Horário para{" "}
+              <Text style={styles.sectionLabelAccent}>
+                {format(date, "d 'de' MMMM", { locale: pt })}
+              </Text>
+            </Text>
+
+            {slotsLoading ? (
+              <ActivityIndicator color="#18B549" style={{ marginTop: 16 }} />
+            ) : groupedSlots.length === 0 ? (
+              <Text style={styles.empty}>Sem horários disponíveis para este dia.</Text>
+            ) : (
+              <View style={styles.hourGroups}>
+                {groupedSlots.map(([hour, hourSlots]) => (
+                  <View key={hour} style={styles.hourGroup}>
+                    <Text style={styles.hourLabel}>{parseInt(hour)}h</Text>
+                    <View style={styles.slotRow}>
+                      {hourSlots.map((s) => (
+                        <TouchableOpacity
+                          key={s.time}
+                          onPress={() => setSelectedSlot(s.time)}
+                          style={[
+                            styles.slotPill,
+                            selectedSlot === s.time && styles.slotPillSelected,
+                          ]}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.slotText,
+                              selectedSlot === s.time && styles.slotTextSelected,
+                            ]}
+                          >
+                            {s.time}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
-      </View>
 
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Sticky confirm footer */}
       {selectedSlot && (
-        <TouchableOpacity style={styles.bookBtn} onPress={() => void handleBook()} disabled={booking}>
-          {booking ? <ActivityIndicator color="#fff" /> : <Text style={styles.bookBtnText}>Confirmar agendamento</Text>}
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <View style={styles.footerInfo}>
+            <Text style={styles.footerTime}>{selectedSlot}</Text>
+            <Text style={styles.footerDate}>
+              {date ? format(date, "EEEE, d 'de' MMMM", { locale: pt }) : ""}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.bookBtn}
+            onPress={() => void handleBook()}
+            disabled={booking}
+          >
+            {booking ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.bookBtnText}>Confirmar</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
-    </ScrollView>
+    </>
   )
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: { flex: 1 },
-  content: { padding: 20 },
-  title: { color: "#fff", fontWeight: "bold", fontSize: 22, marginBottom: 20 },
-  section: { marginBottom: 24 },
-  label: { color: "#9ca3af", fontSize: 13, fontWeight: "500", marginBottom: 10 },
-  dateRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1c1f26", borderRadius: 10, padding: 12 },
-  arrow: { padding: 4 },
-  arrowText: { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  disabled: { color: "#4b5563" },
-  dateText: { color: "#fff", fontWeight: "600", fontSize: 14, textTransform: "capitalize" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  slot: { width: "22%", borderWidth: 1, borderColor: "#2a2d35", borderRadius: 8, paddingVertical: 8, alignItems: "center" },
-  slotDisabled: { opacity: 0.3 },
-  slotSelected: { backgroundColor: "#18B549", borderColor: "#18B549" },
-  slotText: { color: "#fff", fontSize: 12, fontWeight: "500" },
-  slotTextDisabled: { color: "#6b7280" },
-  slotTextSelected: { color: "#fff" },
-  bookBtn: { backgroundColor: "#18B549", borderRadius: 12, paddingVertical: 15, alignItems: "center", marginTop: 8 },
-  bookBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  empty: { color: "#6b7280", fontSize: 13 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#111216" },
+  scroll: { flex: 1, backgroundColor: "#111216" },
+  content: { padding: 16, gap: 16 },
+
+  summaryCard: {
+    backgroundColor: "#17191f",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#2a2d35",
+    padding: 14,
+  },
+  serviceName: { color: "#fff", fontFamily: "Outfit_600SemiBold", fontSize: 16 },
+  serviceMeta: { color: "#9ca3af", fontFamily: "Outfit_400Regular", fontSize: 13, marginTop: 2 },
+
+  sectionLabel: {
+    color: "#9ca3af",
+    fontFamily: "Outfit_400Regular",
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  sectionLabelAccent: { color: "#fff", fontFamily: "Outfit_600SemiBold" },
+
+  slotsSection: { gap: 8 },
+  hourGroups: { gap: 14 },
+  hourGroup: { gap: 8 },
+  hourLabel: { color: "#6b7280", fontFamily: "Outfit_400Regular", fontSize: 12 },
+  slotRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  slotPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2a2d35",
+    backgroundColor: "#17191f",
+  },
+  slotPillSelected: {
+    backgroundColor: "#18B549",
+    borderColor: "#18B549",
+  },
+  slotText: { color: "#fff", fontFamily: "Outfit_400Regular", fontSize: 14 },
+  slotTextSelected: { fontFamily: "Outfit_600SemiBold" },
+  empty: { color: "#6b7280", fontFamily: "Outfit_400Regular", fontSize: 13, marginTop: 8 },
+
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    backgroundColor: "#17191f",
+    borderTopWidth: 1,
+    borderTopColor: "#2a2d35",
+  },
+  footerInfo: { flex: 1 },
+  footerTime: { color: "#fff", fontFamily: "Outfit_700Bold", fontSize: 18 },
+  footerDate: {
+    color: "#9ca3af",
+    fontFamily: "Outfit_400Regular",
+    fontSize: 12,
+    marginTop: 1,
+    textTransform: "capitalize",
+  },
+  bookBtn: {
+    backgroundColor: "#18B549",
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  bookBtnText: { color: "#fff", fontFamily: "Outfit_700Bold", fontSize: 15 },
 })
