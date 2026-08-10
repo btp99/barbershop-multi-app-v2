@@ -1,13 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { CalendarIcon, ScissorsIcon, UserIcon, LogOutIcon, ShieldIcon, SettingsIcon } from "lucide-react"
 import Image from "next/image"
+import ConsentModal from "./ConsentModal"
 
 export default function AppHeader({ shopName, logoUrl }: { shopName: string; logoUrl?: string | null }) {
   const { data: session } = useSession()
   const user = session?.user as { id?: string; name?: string; email?: string; image?: string; isAdmin?: boolean } | undefined
+  const [showConsent, setShowConsent] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
@@ -82,7 +85,7 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
             </>
           ) : (
             <button
-              onClick={() => void signIn("google")}
+              onClick={() => setShowConsent(true)}
               className="text-sm bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-semibold hover:bg-primary/90 transition-colors ml-2"
             >
               Iniciar sessão
@@ -91,5 +94,6 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
         </nav>
       </div>
     </header>
+    {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
   )
 }

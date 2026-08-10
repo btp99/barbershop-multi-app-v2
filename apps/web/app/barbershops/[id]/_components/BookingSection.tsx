@@ -5,8 +5,8 @@ import { trpc } from "@/lib/trpc"
 import { formatPrice, formatDuration } from "@barberlab/ui"
 import Image from "next/image"
 import { toast } from "sonner"
-import { signIn } from "next-auth/react"
 import { AlertTriangleIcon, PlusIcon, XIcon, ArrowLeftIcon } from "lucide-react"
+import ConsentModal from "@/app/_components/ConsentModal"
 import { format, isBefore, startOfDay } from "date-fns"
 import { Calendar } from "@/app/_components/Calendar"
 
@@ -46,6 +46,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
   const [closedDays, setClosedDays] = useState<number[]>([])
   const [serviceSearch, setServiceSearch] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showConsent, setShowConsent] = useState(false)
 
   useEffect(() => {
     trpc.slots.getClosedDays.query().then((d) => setClosedDays(d.closedDaysOfWeek)).catch(() => {})
@@ -131,7 +132,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
   }
 
   const handleBook = async () => {
-    if (!userId) { void signIn("google"); return }
+    if (!userId) { setShowConsent(true); return }
     if (!allTimesSet || !date) return
     setLoading(true)
     try {
@@ -200,6 +201,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
           {loading ? "A agendar..." : userId ? "Confirmar e reservar" : "Iniciar sessão para agendar"}
         </button>
       </div>
+      {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
     )
   }
 

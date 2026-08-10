@@ -4,11 +4,31 @@ import { useState } from "react"
 import { signOut } from "next-auth/react"
 import { trpc } from "@/lib/trpc"
 import { toast } from "sonner"
-import { LogOutIcon, Trash2Icon, ShieldAlertIcon } from "lucide-react"
+import { LogOutIcon, Trash2Icon, ShieldAlertIcon, DownloadIcon } from "lucide-react"
 
 export default function AccountSettings() {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const data = await trpc.user.exportData.query()
+      const json = JSON.stringify(data, null, 2)
+      const blob = new Blob([json], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "dados-pessoais.json"
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Erro ao exportar dados. Tenta novamente.")
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -36,6 +56,22 @@ export default function AccountSettings() {
         >
           <LogOutIcon className="w-4 h-4" />
           Terminar sessão
+        </button>
+      </section>
+
+      {/* Data export */}
+      <section className="border border-border rounded-xl p-5">
+        <h2 className="font-semibold mb-1">Os meus dados</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Exporta uma cópia de todos os teus dados pessoais em formato JSON, conforme o artigo 20.º do RGPD.
+        </p>
+        <button
+          onClick={() => void handleExport()}
+          disabled={exporting}
+          className="flex items-center gap-2 text-sm border border-border rounded-lg px-4 py-2 hover:bg-accent transition-colors disabled:opacity-50"
+        >
+          <DownloadIcon className="w-4 h-4" />
+          {exporting ? "A exportar..." : "Exportar dados"}
         </button>
       </section>
 

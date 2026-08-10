@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Share,
 } from "react-native"
 import { useAuth } from "../../context/AuthContext"
 import { trpc } from "../../lib/trpc"
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -38,6 +40,17 @@ export default function ProfileScreen() {
       .finally(() => setLoading(false))
   }, [token])
 
+  const handleSignIn = () => {
+    Alert.alert(
+      "Iniciar sessão",
+      "Ao continuares, o teu nome e e-mail do Google serão guardados para associar os teus agendamentos. Aceitas a Política de Privacidade e os Termos de Serviço.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Continuar com Google", onPress: () => void signIn() },
+      ]
+    )
+  }
+
   if (!token) {
     return (
       <View style={styles.center}>
@@ -45,7 +58,7 @@ export default function ProfileScreen() {
         <Text style={styles.sub}>
           Inicia sessão para acederes ao teu perfil e agendamentos.
         </Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => void signIn()}>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleSignIn}>
           <Text style={styles.primaryBtnText}>Iniciar sessão com Google</Text>
         </TouchableOpacity>
       </View>
@@ -84,6 +97,21 @@ export default function ProfileScreen() {
     )
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const data = await trpc.user.exportData.query()
+      await Share.share({
+        title: "Os meus dados pessoais",
+        message: JSON.stringify(data, null, 2),
+      })
+    } catch {
+      Alert.alert("Erro", "Não foi possível exportar os dados. Tenta novamente.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Avatar + info */}
@@ -114,6 +142,23 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Sessão</Text>
         <TouchableOpacity style={styles.outlineBtn} onPress={() => void signOut()}>
           <Text style={styles.outlineBtnText}>Terminar sessão</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Data export */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Os meus dados</Text>
+        <Text style={styles.dangerSub}>
+          Exporta uma cópia de todos os teus dados pessoais conforme o artigo 20.º do RGPD.
+        </Text>
+        <TouchableOpacity
+          style={styles.outlineBtn}
+          onPress={() => void handleExport()}
+          disabled={exporting}
+        >
+          <Text style={styles.outlineBtnText}>
+            {exporting ? "A exportar..." : "Exportar dados"}
+          </Text>
         </TouchableOpacity>
       </View>
 
