@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useSession, signIn, signOut } from "next-auth/react"
-import { CalendarIcon, ScissorsIcon, UserIcon, LogOutIcon, ShieldIcon } from "lucide-react"
+import { CalendarIcon, ScissorsIcon, UserIcon, LogOutIcon, ShieldIcon, SettingsIcon } from "lucide-react"
 import Image from "next/image"
 
 export default function AppHeader({ shopName, logoUrl }: { shopName: string; logoUrl?: string | null }) {
@@ -50,7 +50,7 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
                 </Link>
               )}
 
-              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border">
                 {user?.image ? (
                   <Image
                     src={user.image}
@@ -64,6 +64,13 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
                     <UserIcon className="w-4 h-4 text-primary" />
                   </div>
                 )}
+                <Link
+                  href="/settings"
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-accent transition-colors"
+                  title="Definições"
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                </Link>
                 <button
                   onClick={() => void signOut()}
                   className="text-sm text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-accent transition-colors"

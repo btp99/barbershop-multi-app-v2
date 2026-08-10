@@ -7,6 +7,7 @@ import { reviewRouter } from "./routers/review"
 import { slotsRouter } from "./routers/slots"
 import { clientRouter } from "./routers/client"
 import { timeblockRouter } from "./routers/timeblock"
+import { userRouter } from "./routers/user"
 
 export const appRouter = router({
   barbershop: barbershopRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   slots: slotsRouter,
   client: clientRouter,
   timeblock: timeblockRouter,
+  user: userRouter,
 })
 
 export type AppRouter = typeof appRouter
