@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useRef } from "react"
 import {
   View,
   Text,
@@ -40,6 +40,7 @@ export default function BookingConfirmScreen() {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [closedDays, setClosedDays] = useState<number[]>([])
   const [booking, setBooking] = useState(false)
+  const bookingInFlight = useRef(false)
   const router = useRouter()
 
   // Load service info + closed days
@@ -90,6 +91,8 @@ export default function BookingConfirmScreen() {
 
   const handleBook = async () => {
     if (!selectedSlot || !service || !date) return
+    if (bookingInFlight.current) return
+    bookingInFlight.current = true
     setBooking(true)
     try {
       const end = minutesToTime(timeToMinutes(selectedSlot) + service.duration)
@@ -97,12 +100,10 @@ export default function BookingConfirmScreen() {
         date,
         services: [{ serviceId: service.id, startTime: selectedSlot, endTime: end }],
       })
-      Alert.alert("Agendamento confirmado!", "O teu agendamento foi realizado com sucesso.", [
-        { text: "OK", onPress: () => router.push("/(tabs)/bookings") },
-      ])
+      router.replace("/(tabs)/bookings")
     } catch {
       Alert.alert("Erro", "Não foi possível realizar o agendamento. Tenta novamente.")
-    } finally {
+      bookingInFlight.current = false
       setBooking(false)
     }
   }
