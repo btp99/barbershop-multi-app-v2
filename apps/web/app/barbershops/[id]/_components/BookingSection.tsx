@@ -200,8 +200,8 @@ export default function BookingSection({ services, userId }: BookingSectionProps
         <button onClick={() => void handleBook()} disabled={loading} className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold text-sm disabled:opacity-50">
           {loading ? "A agendar..." : userId ? "Confirmar e reservar" : "Iniciar sessão para agendar"}
         </button>
+        {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
       </div>
-      {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
     )
   }
 
