@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist } from "next/font/google"
+import { Outfit } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
 import { Providers } from "./providers"
@@ -7,8 +7,8 @@ import AppHeader from "./_components/AppHeader"
 import Footer from "./_components/Footer"
 import { getServerCaller } from "@/lib/trpc-server"
 
-const geist = Geist({
-  variable: "--font-geist",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 })
 
@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   }
 
   return (
-    <html lang="pt" className={`${geist.variable} dark h-full antialiased`}>
+    <html lang="pt" className={`${outfit.variable} dark h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>
           <AppHeader shopName={shopName} logoUrl={logoUrl} />

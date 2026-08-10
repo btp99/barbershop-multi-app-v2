@@ -1,8 +1,26 @@
 import { Stack } from "expo-router"
 import { AuthProvider } from "../context/AuthContext"
 import { StatusBar } from "expo-status-bar"
+import { useFonts } from "expo-font"
+import { Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit"
+import * as SplashScreen from "expo-splash-screen"
+import { useEffect } from "react"
+
+SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+  })
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync()
+  }, [fontsLoaded])
+
+  if (!fontsLoaded) return null
+
   return (
     <AuthProvider>
       <StatusBar style="light" />
@@ -10,7 +28,7 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: "#111216" },
           headerTintColor: "#fff",
-          headerTitleStyle: { fontWeight: "bold" },
+          headerTitleStyle: { fontFamily: "Outfit_600SemiBold" },
           contentStyle: { backgroundColor: "#111216" },
         }}
       >

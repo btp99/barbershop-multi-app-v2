@@ -265,7 +265,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
 
       {dateStr && currentEntry && (
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">
+          <p className="text-sm font-medium text-muted-foreground mb-3">
             Horário para <span className="text-foreground">{currentEntry.service.name}</span>
           </p>
           {slotsLoading ? (
@@ -273,11 +273,32 @@ export default function BookingSection({ services, userId }: BookingSectionProps
           ) : availableSlots.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem horários disponíveis para este dia.</p>
           ) : (
-            <div className="grid grid-cols-4 gap-2">
-              {availableSlots.map((s) => (
-                <button key={s.time} onClick={() => handleTimeSelect(s.time)} className={`text-xs py-1.5 rounded-lg border font-medium transition-colors ${currentEntry.startTime === s.time ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary"}`}>
-                  {s.time}
-                </button>
+            <div className="space-y-3">
+              {Object.entries(
+                availableSlots.reduce<Record<string, { time: string; available: boolean }[]>>((acc, s) => {
+                  const h = s.time.split(":")[0]
+                  ;(acc[h] ??= []).push(s)
+                  return acc
+                }, {})
+              ).map(([hour, hourSlots]) => (
+                <div key={hour}>
+                  <p className="text-xs text-muted-foreground mb-1.5">{parseInt(hour)}h</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {hourSlots.map((s) => (
+                      <button
+                        key={s.time}
+                        onClick={() => handleTimeSelect(s.time)}
+                        className={`text-sm px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                          currentEntry.startTime === s.time
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border hover:border-primary/60"
+                        }`}
+                      >
+                        {s.time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
