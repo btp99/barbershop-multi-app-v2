@@ -13,6 +13,7 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
   const [showConsent, setShowConsent] = useState(false)
 
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg">
@@ -95,5 +96,6 @@ export default function AppHeader({ shopName, logoUrl }: { shopName: string; log
       </div>
     </header>
     {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
+    </>
   )
 }
