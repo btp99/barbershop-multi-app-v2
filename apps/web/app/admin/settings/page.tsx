@@ -24,12 +24,12 @@ export default async function AdminSettingsPage() {
     <div className="p-6 space-y-10 max-w-2xl">
       <section>
         <h1 className="text-2xl font-bold mb-6">Definições</h1>
-        <SettingsForm barbershop={full} />
+        <SettingsForm barbershop={{ ...full, logoUrl: full.logoUrl ?? null }} />
       </section>
 
       <section>
         <h2 className="text-xl font-bold mb-4">Serviços</h2>
-        <ServiceManager services={full.services} />
+        <ServiceManager services={full.services.map((s) => ({ ...s, price: Number(s.price) }))} />
       </section>
 
       <section>

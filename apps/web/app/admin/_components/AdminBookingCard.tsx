@@ -23,7 +23,7 @@ interface Booking {
   services: BookingService[]
 }
 
-export default function AdminBookingCard({ booking }: { booking: Booking }) {
+export default function AdminBookingCard({ booking, onUpdate }: { booking: Booking; onUpdate?: () => void }) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -35,6 +35,7 @@ export default function AdminBookingCard({ booking }: { booking: Booking }) {
     try {
       await trpc.admin.completeBooking.mutate({ bookingId: booking.id })
       toast.success("Agendamento marcado como concluído.")
+      onUpdate?.()
       router.refresh()
     } catch {
       toast.error("Erro ao concluir agendamento.")
@@ -49,6 +50,7 @@ export default function AdminBookingCard({ booking }: { booking: Booking }) {
     try {
       await trpc.admin.cancelBooking.mutate({ bookingId: booking.id })
       toast.success("Agendamento cancelado.")
+      onUpdate?.()
       router.refresh()
     } catch {
       toast.error("Erro ao cancelar agendamento.")

@@ -3,11 +3,34 @@ import { OAuth2Client } from "google-auth-library"
 import { db } from "@barberlab/db"
 import { signToken } from "../auth"
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+)
+
+type IdTokenBody = { idToken: string }
+type CodeBody = { code: string; codeVerifier: string; redirectUri: string }
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post<{ Body: { idToken: string } }>("/auth/google", async (req, reply) => {
-    const { idToken } = req.body
+  app.post<{ Body: IdTokenBody | CodeBody }>("/auth/google", async (req, reply) => {
+    let idToken: string | undefined
+
+    if ("idToken" in req.body) {
+      idToken = req.body.idToken
+    } else if ("code" in req.body) {
+      const { code, codeVerifier, redirectUri } = req.body
+      try {
+        const { tokens } = await googleClient.getToken({
+          code,
+          codeVerifier,
+          redirect_uri: redirectUri,
+        })
+        idToken = tokens.id_token ?? undefined
+      } catch (err) {
+        console.error("[auth] Code exchange failed:", err)
+        return reply.status(401).send({ error: "Code exchange failed" })
+      }
+    }
 
     if (!idToken) {
       return reply.status(400).send({ error: "idToken is required" })

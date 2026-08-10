@@ -7,6 +7,8 @@ import Image from "next/image"
 import { toast } from "sonner"
 import { signIn } from "next-auth/react"
 import { AlertTriangleIcon, PlusIcon, XIcon, ArrowLeftIcon } from "lucide-react"
+import { format, isBefore, startOfDay } from "date-fns"
+import { Calendar } from "@/app/_components/Calendar"
 
 interface Service {
   id: string
@@ -38,7 +40,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
   const [step, setStep] = useState<"initial" | "schedule" | "servicePicker" | "confirm">("initial")
   const [entries, setEntries] = useState<ServiceEntry[]>([])
   const [pickingFor, setPickingFor] = useState(0)
-  const [date, setDate] = useState("")
+  const [date, setDate] = useState<Date | undefined>(undefined)
   const [slots, setSlots] = useState<{ time: string; available: boolean }[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [closedDays, setClosedDays] = useState<number[]>([])
@@ -51,30 +53,31 @@ export default function BookingSection({ services, userId }: BookingSectionProps
 
   const currentEntry = entries[pickingFor]
   const afterTime = pickingFor > 0 ? entries[pickingFor - 1]?.endTime : undefined
+  const dateStr = date ? format(date, "yyyy-MM-dd") : ""
 
   const loadSlots = useCallback(async () => {
-    if (!date || !currentEntry) { setSlots([]); return }
+    if (!dateStr || !currentEntry) { setSlots([]); return }
     setSlotsLoading(true)
-    trpc.slots.getSlots.query({ date, duration: currentEntry.service.duration, after: afterTime })
+    trpc.slots.getSlots.query({ date: dateStr, duration: currentEntry.service.duration, after: afterTime })
       .then((d) => setSlots(d.slots))
       .catch(() => setSlots([]))
       .finally(() => setSlotsLoading(false))
-  }, [date, currentEntry, afterTime])
+  }, [dateStr, currentEntry, afterTime])
 
   useEffect(() => { void loadSlots() }, [loadSlots])
 
-  const todayStr = new Date().toISOString().split("T")[0]
+  const isSelectedToday = date ? isBefore(startOfDay(new Date()), startOfDay(date)) === false && format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") : false
 
   const availableSlots = useMemo(() => {
     return slots.filter((s) => {
       if (!s.available) return false
-      if (date === todayStr) {
+      if (isSelectedToday) {
         const now = new Date()
         return timeToMinutes(s.time) >= now.getHours() * 60 + now.getMinutes() + 15
       }
       return true
     })
-  }, [slots, date, todayStr])
+  }, [slots, isSelectedToday])
 
   const allTimesSet = entries.length > 0 && entries.every((e) => e.startTime)
 
@@ -96,9 +99,9 @@ export default function BookingSection({ services, userId }: BookingSectionProps
     return timeToMinutes(last.endTime) - timeToMinutes(first.startTime)
   }, [entries])
 
-  const handleDateChange = (d: string) => {
-    const dow = new Date(d + "T12:00:00").getDay()
-    if (closedDays.includes(dow)) { toast.error("A barbearia está fechada neste dia."); return }
+  const handleDateChange = (d: Date | undefined) => {
+    if (!d) return
+    if (closedDays.includes(d.getDay())) { toast.error("A barbearia está fechada neste dia."); return }
     setDate(d)
     setEntries((prev) => prev.map((e) => ({ ...e, startTime: undefined, endTime: undefined })))
     setPickingFor(0)
@@ -124,7 +127,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
     const next = entries.filter((_, i) => i !== index)
     setEntries(next)
     if (pickingFor >= index && pickingFor > 0) setPickingFor(pickingFor - 1)
-    if (next.length === 0) { setStep("initial"); setDate("") }
+    if (next.length === 0) { setStep("initial"); setDate(undefined) }
   }
 
   const handleBook = async () => {
@@ -133,11 +136,11 @@ export default function BookingSection({ services, userId }: BookingSectionProps
     setLoading(true)
     try {
       await trpc.booking.create.mutate({
-        date: new Date(date + "T00:00:00"),
+        date: date,
         services: entries.map((e) => ({ serviceId: e.service.id, startTime: e.startTime!, endTime: e.endTime! })),
       })
       toast.success("Agendamento realizado com sucesso!")
-      setStep("initial"); setEntries([]); setDate("")
+      setStep("initial"); setEntries([]); setDate(undefined)
     } catch {
       toast.error("Erro ao agendar. Tente novamente.")
     } finally {
@@ -145,7 +148,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
     }
   }
 
-  const resetToInitial = () => { setStep("initial"); setEntries([]); setDate("") }
+  const resetToInitial = () => { setStep("initial"); setEntries([]); setDate(undefined) }
 
   // ── Confirm view ─────────────────────────────────────────────────────────
   if (step === "confirm") {
@@ -157,7 +160,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
 
         <div className="border border-border rounded-xl p-4 space-y-3 bg-card">
           <p className="font-semibold text-center capitalize">
-            {new Date(date + "T12:00:00").toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            {date ? date.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : ""}
           </p>
           {entries.map((entry, i) => (
             <div key={i}>
@@ -250,12 +253,17 @@ export default function BookingSection({ services, userId }: BookingSectionProps
   // ── Schedule view ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium text-muted-foreground mb-1 block">Data</label>
-        <input type="date" value={date} min={todayStr} onChange={(e) => handleDateChange(e.target.value)} className="border border-input rounded-lg px-3 py-2 text-sm w-full bg-background" />
+      <div className="rounded-xl border border-border bg-card/50 p-4">
+        <Calendar
+          selected={date}
+          onSelect={handleDateChange}
+          disabled={(d) =>
+            isBefore(d, startOfDay(new Date())) || closedDays.includes(d.getDay())
+          }
+        />
       </div>
 
-      {date && currentEntry && (
+      {dateStr && currentEntry && (
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">
             Horário para <span className="text-foreground">{currentEntry.service.name}</span>
@@ -294,7 +302,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
           </div>
         ))}
 
-        {allTimesSet && date && (
+        {allTimesSet && dateStr && (
           <button onClick={() => setStep("servicePicker")} className="text-primary flex items-center gap-2 py-2 text-sm font-medium">
             <PlusIcon className="w-4 h-4" /> Adicionar outro serviço
           </button>
@@ -306,7 +314,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
           <span className="text-muted-foreground">Total · {formatDuration(totalDuration)}</span>
           <span className="font-bold">{formatPrice(totalPrice)}</span>
         </div>
-        <button disabled={!allTimesSet || !date} onClick={() => setStep("confirm")} className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 font-semibold text-sm disabled:opacity-50">
+        <button disabled={!allTimesSet || !dateStr} onClick={() => setStep("confirm")} className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 font-semibold text-sm disabled:opacity-50">
           Continuar
         </button>
         <button onClick={resetToInitial} className="w-full text-sm text-muted-foreground hover:text-foreground py-1">

@@ -4,20 +4,19 @@ import { ScissorsIcon, CalendarIcon, UserIcon } from "lucide-react-native"
 export default function TabsLayout() {
   return (
     <Tabs
-      sceneContainerStyle={{ backgroundColor: "#111216" }}
       screenOptions={{
         headerStyle: { backgroundColor: "#111216" },
         headerTintColor: "#fff",
         tabBarStyle: { backgroundColor: "#111216", borderTopColor: "#2a2d35" },
         tabBarActiveTintColor: "#18B549",
         tabBarInactiveTintColor: "#6b7280",
-        contentStyle: { backgroundColor: "#111216" },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Barbearia",
+          title: "Agendar",
+          tabBarLabel: "Agendar",
           tabBarIcon: ({ color, size }) => <ScissorsIcon color={color} size={size} />,
         }}
       />

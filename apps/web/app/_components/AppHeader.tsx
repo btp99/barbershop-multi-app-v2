@@ -5,7 +5,7 @@ import { useSession, signIn, signOut } from "next-auth/react"
 import { CalendarIcon, ScissorsIcon, UserIcon, LogOutIcon, ShieldIcon } from "lucide-react"
 import Image from "next/image"
 
-export default function AppHeader() {
+export default function AppHeader({ shopName, logoUrl }: { shopName: string; logoUrl?: string | null }) {
   const { data: session } = useSession()
   const user = session?.user as { id?: string; name?: string; email?: string; image?: string; isAdmin?: boolean } | undefined
 
@@ -13,8 +13,12 @@ export default function AppHeader() {
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <ScissorsIcon className="w-5 h-5 text-primary" />
-          <span>BarberLab</span>
+          {logoUrl ? (
+            <Image src={logoUrl} alt={shopName} width={28} height={28} className="rounded-md object-contain" />
+          ) : (
+            <ScissorsIcon className="w-5 h-5 text-primary" />
+          )}
+          <span>{shopName}</span>
         </Link>
 
         <nav className="flex items-center gap-1">
@@ -22,7 +26,7 @@ export default function AppHeader() {
             href="/barbershops"
             className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
           >
-            Barbearias
+            Agendar
           </Link>
 
           {session ? (

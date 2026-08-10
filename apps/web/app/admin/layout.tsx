@@ -11,8 +11,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session || !user?.isAdmin) redirect("/")
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-56 border-r border-border bg-card flex-shrink-0">
+    <div className="flex h-screen overflow-hidden">
+      <aside className="w-56 flex-shrink-0 overflow-y-auto border-r border-border bg-card">
         <div className="p-5">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
             Painel Admin
@@ -49,7 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </nav>
         </div>
       </aside>
-      <div className="flex-1 overflow-auto">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {children}
       </div>
     </div>
