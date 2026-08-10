@@ -280,7 +280,7 @@ export default function BookingSection({ services, userId }: BookingSectionProps
                   ;(acc[h] ??= []).push(s)
                   return acc
                 }, {})
-              ).map(([hour, hourSlots]) => (
+              ).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([hour, hourSlots]) => (
                 <div key={hour}>
                   <p className="text-xs text-muted-foreground mb-1.5">{parseInt(hour)}h</p>
                   <div className="flex flex-wrap gap-1.5">
