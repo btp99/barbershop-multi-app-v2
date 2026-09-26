@@ -156,6 +156,23 @@ export const adminRouter = router({
       await db.businessHours.update({ where: { id }, data })
     }),
 
+  getBookingById: adminProcedure
+    .input(z.object({ bookingId: z.string() }))
+    .query(async ({ input }) => {
+      const booking = await db.booking.findUnique({
+        where: { id: input.bookingId },
+        include: {
+          services: { include: { service: true } },
+          user: { select: { id: true, name: true, email: true, image: true } },
+          client: true,
+        },
+      })
+      if (!booking) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Agendamento não encontrado" })
+      }
+      return booking
+    }),
+
   updateBarbershop: adminProcedure
     .input(
       z.object({

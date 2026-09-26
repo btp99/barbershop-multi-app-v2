@@ -1,0 +1,61 @@
+import { MD3DarkTheme } from "react-native-paper"
+
+export const theme = {
+  ...MD3DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    primary: "#18B549",
+    onPrimary: "#ffffff",
+    primaryContainer: "rgba(24,181,73,0.15)",
+    onPrimaryContainer: "#18B549",
+    secondary: "#9ca3af",
+    onSecondary: "#111216",
+    secondaryContainer: "#1c1f26",
+    onSecondaryContainer: "#9ca3af",
+    background: "#111216",
+    onBackground: "#ffffff",
+    surface: "#17191f",
+    onSurface: "#ffffff",
+    surfaceVariant: "#1c1f26",
+    onSurfaceVariant: "#9ca3af",
+    outline: "#2a2d35",
+    outlineVariant: "#2a2d35",
+    error: "#ef4444",
+    onError: "#ffffff",
+    errorContainer: "rgba(239,68,68,0.15)",
+    onErrorContainer: "#ef4444",
+    elevation: {
+      level0: "transparent",
+      level1: "#17191f",
+      level2: "#1c1f26",
+      level3: "#212429",
+      level4: "#232630",
+      level5: "#252833",
+    },
+  },
+}
+
+export type AppTheme = typeof theme
+
+export const calendarTheme = {
+  backgroundColor: "#111216",
+  calendarBackground: "#17191f",
+  textSectionTitleColor: "#6b7280",
+  selectedDayBackgroundColor: "#18B549",
+  selectedDayTextColor: "#ffffff",
+  todayTextColor: "#18B549",
+  dayTextColor: "#ffffff",
+  textDisabledColor: "#2a2d35",
+  dotColor: "#18B549",
+  selectedDotColor: "#ffffff",
+  arrowColor: "#18B549",
+  disabledArrowColor: "#2a2d35",
+  monthTextColor: "#ffffff",
+  indicatorColor: "#18B549",
+  textDayFontFamily: "Outfit_400Regular",
+  textMonthFontFamily: "Outfit_600SemiBold",
+  textDayHeaderFontFamily: "Outfit_400Regular",
+  textDayFontSize: 14,
+  textMonthFontSize: 16,
+  textDayHeaderFontSize: 12,
+}

@@ -1,5 +1,6 @@
 import { router } from "./trpc"
 import { barbershopRouter } from "./routers/barbershop"
+import { shopRouter } from "./routers/shop"
 import { bookingRouter } from "./routers/booking"
 import { adminRouter } from "./routers/admin"
 import { serviceRouter } from "./routers/service"
@@ -11,6 +12,7 @@ import { userRouter } from "./routers/user"
 
 export const appRouter = router({
   barbershop: barbershopRouter,
+  shop: shopRouter,
   booking: bookingRouter,
   admin: adminRouter,
   service: serviceRouter,

@@ -1,0 +1,44 @@
+{
+  "name": "@barberlab/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "private": true,
+  "dependencies": {
+    "@barberlab/trpc": "workspace:*",
+    "@expo-google-fonts/outfit": "^0.4.3",
+    "@expo/vector-icons": "^14.0.4",
+    "@trpc/client": "^11.0.0",
+    "date-fns": "^4.4.0",
+    "expo": "~57.0.11",
+    "expo-auth-session": "~57.0.6",
+    "expo-crypto": "~57.0.1",
+    "expo-font": "^57.0.1",
+    "expo-router": "~57.0.11",
+    "expo-secure-store": "~57.0.1",
+    "expo-splash-screen": "^57.0.6",
+    "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-native": "0.86.2",
+    "react-native-calendars": "^1.1305.0",
+    "react-native-gesture-handler": "^2.24.0",
+    "react-native-paper": "^5.13.1",
+    "react-native-safe-area-context": "~5.8.1",
+    "react-native-screens": "~4.27.0",
+    "react-native-svg": "^15.15.5",
+    "react-native-web": "~0.21.2",
+    "lucide-react-native": "^0.475.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "dev": "expo start"
+  }
+}

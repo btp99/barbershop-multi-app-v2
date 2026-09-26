@@ -1,0 +1,6 @@
+{
+  "name": "@barberlab/web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web application — planned, not yet implemented. Will use Next.js App Router, user-only (no admin functionality)."
+}
