@@ -6,7 +6,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from "react-native"
 import { useRouter } from "expo-router"
 import { ActivityIndicator, Surface, Chip } from "react-native-paper"
@@ -55,14 +54,7 @@ export default function HomeScreen() {
   const handleBook = () => {
     if (!selectedServiceId) return
     if (!token) {
-      Alert.alert(
-        "Iniciar sessão",
-        "Necessitas de ter sessão iniciada para fazer uma marcação.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Iniciar sessão", onPress: () => void signIn() },
-        ]
-      )
+      void signIn()
       return
     }
     router.push({ pathname: "/booking", params: { serviceId: selectedServiceId } })

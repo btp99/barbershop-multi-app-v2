@@ -39,23 +39,14 @@ export default function ProfileScreen() {
       .finally(() => setLoading(false))
   }, [token])
 
-  const handleSignIn = () => {
-    Alert.alert(
-      "Iniciar sessão",
-      "Ao continuares, o teu nome e e-mail do Google serão guardados para associar as tuas marcações. Aceitas a Política de Privacidade e os Termos de Serviço.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Continuar com Google", onPress: () => void signIn() },
-      ]
-    )
-  }
-
   if (!token) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>A tua conta</Text>
-        <Text style={styles.sub}>Inicia sessão para acederes ao teu perfil e marcações.</Text>
-        <Button mode="contained" onPress={handleSignIn} style={{ marginTop: 20 }}>
+        <Text style={styles.sub}>
+          Inicia sessão para acederes ao teu perfil e marcações. O teu nome e e-mail do Google serão guardados para associar as tuas marcações.
+        </Text>
+        <Button mode="contained" onPress={() => void signIn()} style={{ marginTop: 20 }}>
           Iniciar sessão com Google
         </Button>
       </View>

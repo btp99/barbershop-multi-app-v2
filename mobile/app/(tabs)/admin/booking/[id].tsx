@@ -7,7 +7,7 @@ import {
   Alert,
 } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { ActivityIndicator, Button, Surface, Divider } from "react-native-paper"
+import { ActivityIndicator, Button, Surface, Divider, Dialog, Portal } from "react-native-paper"
 import { format } from "date-fns"
 import { pt } from "date-fns/locale"
 import { trpc } from "../../../../lib/trpc"
@@ -29,6 +29,7 @@ export default function AdminBookingDetailScreen() {
   const [booking, setBooking] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState(false)
+  const [dialog, setDialog] = useState<"complete" | "cancel" | null>(null)
 
   const load = () => {
     if (!id) return
@@ -42,45 +43,21 @@ export default function AdminBookingDetailScreen() {
 
   useEffect(load, [id])
 
-  const handleCancel = () => {
-    Alert.alert("Cancelar marcação", "Tens a certeza?", [
-      { text: "Não", style: "cancel" },
-      {
-        text: "Cancelar marcação",
-        style: "destructive",
-        onPress: async () => {
-          setActing(true)
-          try {
-            await trpc.admin.cancelBooking.mutate({ bookingId: id! })
-            load()
-          } catch {
-            Alert.alert("Erro", "Não foi possível cancelar.")
-          } finally {
-            setActing(false)
-          }
-        },
-      },
-    ])
-  }
-
-  const handleComplete = () => {
-    Alert.alert("Marcar como concluída", "Marcar esta marcação como concluída?", [
-      { text: "Não", style: "cancel" },
-      {
-        text: "Concluir",
-        onPress: async () => {
-          setActing(true)
-          try {
-            await trpc.admin.completeBooking.mutate({ bookingId: id! })
-            load()
-          } catch {
-            Alert.alert("Erro", "Não foi possível concluir.")
-          } finally {
-            setActing(false)
-          }
-        },
-      },
-    ])
+  const confirmAction = async (action: "complete" | "cancel") => {
+    setDialog(null)
+    setActing(true)
+    try {
+      if (action === "complete") {
+        await trpc.admin.completeBooking.mutate({ bookingId: id! })
+      } else {
+        await trpc.admin.cancelBooking.mutate({ bookingId: id! })
+      }
+      load()
+    } catch {
+      Alert.alert("Erro", action === "complete" ? "Não foi possível concluir." : "Não foi possível cancelar.")
+    } finally {
+      setActing(false)
+    }
   }
 
   if (loading) {
@@ -108,6 +85,7 @@ export default function AdminBookingDetailScreen() {
   )
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {/* Status + date */}
       <Surface style={styles.card} elevation={0}>
@@ -189,7 +167,7 @@ export default function AdminBookingDetailScreen() {
         <View style={styles.actions}>
           <Button
             mode="contained"
-            onPress={handleComplete}
+            onPress={() => setDialog("complete")}
             loading={acting}
             style={[styles.actionBtn, { flex: 1 }]}
           >
@@ -197,7 +175,7 @@ export default function AdminBookingDetailScreen() {
           </Button>
           <Button
             mode="outlined"
-            onPress={handleCancel}
+            onPress={() => setDialog("cancel")}
             loading={acting}
             style={[styles.actionBtn, { flex: 1 }]}
             textColor="#ef4444"
@@ -208,6 +186,33 @@ export default function AdminBookingDetailScreen() {
         </View>
       )}
     </ScrollView>
+
+    <Portal>
+      <Dialog visible={dialog === "complete"} onDismiss={() => setDialog(null)}
+        style={{ backgroundColor: "#17191f" }}>
+        <Dialog.Title style={{ color: "#fff" }}>Concluir marcação</Dialog.Title>
+        <Dialog.Content>
+          <Text style={{ color: "#9ca3af" }}>Marcar esta marcação como concluída?</Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setDialog(null)} textColor="#9ca3af">Não</Button>
+          <Button onPress={() => void confirmAction("complete")} textColor="#18B549">Concluir</Button>
+        </Dialog.Actions>
+      </Dialog>
+
+      <Dialog visible={dialog === "cancel"} onDismiss={() => setDialog(null)}
+        style={{ backgroundColor: "#17191f" }}>
+        <Dialog.Title style={{ color: "#fff" }}>Cancelar marcação</Dialog.Title>
+        <Dialog.Content>
+          <Text style={{ color: "#9ca3af" }}>Tens a certeza que pretendes cancelar esta marcação?</Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setDialog(null)} textColor="#9ca3af">Não</Button>
+          <Button onPress={() => void confirmAction("cancel")} textColor="#ef4444">Cancelar marcação</Button>
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
+    </>
   )
 }
 
