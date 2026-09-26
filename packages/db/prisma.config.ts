@@ -1,5 +1,5 @@
 import { config } from "dotenv"
-config({ path: "../../apps/api/.env" })
+config({ path: "../../backend/.env" })
 import { defineConfig } from "prisma/config"
 
 export default defineConfig({

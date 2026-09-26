@@ -126,9 +126,10 @@ model Booking {
   startTime     String
   endTime       String
   totalDuration Int
-  status          BookingStatus    @default(CONFIRMED)
-  note            String?
-  clientMessage   String?
+  status              BookingStatus    @default(CONFIRMED)
+  cancellationReason  String?
+  note                String?
+  clientMessage       String?
   reminderSentAt  DateTime?
   services        BookingService[]
   createdAt       DateTime         @default(now())

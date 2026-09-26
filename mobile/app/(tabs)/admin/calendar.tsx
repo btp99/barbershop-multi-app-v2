@@ -162,44 +162,98 @@ export default function AdminCalendarScreen() {
         )}
 
         {/* Bookings for selected day */}
-        <Text style={styles.sectionTitle}>
-          Marcações ({loadingDay ? "..." : dayBookings.length})
-        </Text>
-
         {loadingDay ? (
           <ActivityIndicator color="#18B549" style={{ marginTop: 8 }} />
-        ) : dayBookings.length === 0 ? (
-          <Text style={styles.empty}>Sem marcações para este dia.</Text>
-        ) : (
-          <View style={styles.bookingList}>
-            {dayBookings.map((b) => {
-              const clientName = b.client?.name ?? b.user?.name ?? null
-              const services = b.services.map((bs: any) => ({
-                id: bs.id,
-                service: { name: bs.service.name },
-              }))
-              return (
-                <BookingCard
-                  key={b.id}
-                  id={b.id}
-                  date={b.date}
-                  startTime={b.startTime}
-                  endTime={b.endTime}
-                  status={b.status}
-                  services={services}
-                  clientName={clientName}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(tabs)/admin/booking/[id]",
-                      params: { id: b.id },
-                    })
-                  }
-                  dimIfPast={false}
-                />
-              )
-            })}
-          </View>
-        )}
+        ) : (() => {
+          const active = dayBookings.filter((b: any) => b.status !== "CANCELLED")
+          const cancelled = dayBookings.filter((b: any) => b.status === "CANCELLED")
+
+          const renderCard = (b: any) => {
+            const clientName = b.client?.name ?? b.user?.name ?? null
+            const services = b.services.map((bs: any) => ({
+              id: bs.id,
+              service: { name: bs.service.name },
+            }))
+            return (
+              <BookingCard
+                key={b.id}
+                id={b.id}
+                date={b.date}
+                startTime={b.startTime}
+                endTime={b.endTime}
+                status={b.status}
+                services={services}
+                clientName={clientName}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/admin/booking/[id]",
+                    params: { id: b.id },
+                  })
+                }
+                dimIfPast={false}
+              />
+            )
+          }
+
+          return (
+            <>
+              <Text style={styles.sectionTitle}>
+                Marcações ({active.length})
+              </Text>
+              {active.length === 0 ? (
+                <Text style={styles.empty}>Sem marcações para este dia.</Text>
+              ) : (
+                <View style={styles.bookingList}>
+                  {active.map(renderCard)}
+                </View>
+              )}
+
+              {cancelled.length > 0 && (
+                <>
+                  <Text style={styles.cancelledTitle}>
+                    Canceladas ({cancelled.length})
+                  </Text>
+                  <View style={styles.bookingList}>
+                    {cancelled.map((b: any) => {
+                      const clientName = b.client?.name ?? b.user?.name ?? null
+                      const services = b.services.map((bs: any) => ({
+                        id: bs.id,
+                        service: { name: bs.service.name },
+                      }))
+                      return (
+                        <View key={b.id}>
+                          <BookingCard
+                            id={b.id}
+                            date={b.date}
+                            startTime={b.startTime}
+                            endTime={b.endTime}
+                            status={b.status}
+                            services={services}
+                            clientName={clientName}
+                            onPress={() =>
+                              router.push({
+                                pathname: "/(tabs)/admin/booking/[id]",
+                                params: { id: b.id },
+                              })
+                            }
+                            dimIfPast={false}
+                          />
+                          {b.cancellationReason && (
+                            <View style={styles.reasonTag}>
+                              <Text style={styles.reasonTagText}>
+                                Motivo: {b.cancellationReason}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )
+                    })}
+                  </View>
+                </>
+              )}
+            </>
+          )
+        })()}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -293,8 +347,22 @@ const styles = StyleSheet.create({
   blockReason: { color: "#9ca3af", fontFamily: "Outfit_400Regular", fontSize: 12 },
   deleteText: { color: "#ef4444", fontFamily: "Outfit_400Regular", fontSize: 13 },
   sectionTitle: { color: "#fff", fontFamily: "Outfit_700Bold", fontSize: 16 },
+  cancelledTitle: { color: "#ef4444", fontFamily: "Outfit_700Bold", fontSize: 15, marginTop: 4 },
   bookingList: { gap: 10 },
   empty: { color: "#6b7280", fontFamily: "Outfit_400Regular", fontSize: 14 },
+  reasonTag: {
+    marginTop: -4,
+    marginHorizontal: 4,
+    backgroundColor: "rgba(239,68,68,0.08)",
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: "rgba(239,68,68,0.3)",
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  reasonTagText: { color: "#ef4444", fontFamily: "Outfit_400Regular", fontSize: 12 },
   fab: { position: "absolute", bottom: 24, right: 16, backgroundColor: "#18B549" },
   dialog: { backgroundColor: "#17191f" },
   dialogTitle: { color: "#fff", fontFamily: "Outfit_600SemiBold" },

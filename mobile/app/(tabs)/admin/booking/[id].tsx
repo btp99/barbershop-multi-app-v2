@@ -5,9 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  TouchableOpacity,
 } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { ActivityIndicator, Button, Surface, Divider, Dialog, Portal } from "react-native-paper"
+import { ActivityIndicator, Button, Surface, Divider, Dialog, Portal, TextInput } from "react-native-paper"
 import { format } from "date-fns"
 import { pt } from "date-fns/locale"
 import { trpc } from "../../../../lib/trpc"
@@ -23,6 +24,13 @@ function formatDuration(minutes: number) {
   return m > 0 ? `${h}h ${m}min` : `${h}h`
 }
 
+const CANCEL_REASONS = [
+  "Cliente não compareceu",
+  "Pedido do cliente",
+  "Indisponibilidade do barbeiro",
+  "Outro",
+]
+
 export default function AdminBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
@@ -30,6 +38,8 @@ export default function AdminBookingDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState(false)
   const [dialog, setDialog] = useState<"complete" | "cancel" | null>(null)
+  const [selectedReason, setSelectedReason] = useState<string>(CANCEL_REASONS[0])
+  const [customReason, setCustomReason] = useState("")
 
   const load = () => {
     if (!id) return
@@ -43,6 +53,12 @@ export default function AdminBookingDetailScreen() {
 
   useEffect(load, [id])
 
+  const openCancelDialog = () => {
+    setSelectedReason(CANCEL_REASONS[0])
+    setCustomReason("")
+    setDialog("cancel")
+  }
+
   const confirmAction = async (action: "complete" | "cancel") => {
     setDialog(null)
     setActing(true)
@@ -50,7 +66,10 @@ export default function AdminBookingDetailScreen() {
       if (action === "complete") {
         await trpc.admin.completeBooking.mutate({ bookingId: id! })
       } else {
-        await trpc.admin.cancelBooking.mutate({ bookingId: id! })
+        const reason = selectedReason === "Outro"
+          ? (customReason.trim() || "Outro")
+          : selectedReason
+        await trpc.admin.cancelBooking.mutate({ bookingId: id!, reason })
       }
       load()
     } catch {
@@ -100,6 +119,12 @@ export default function AdminBookingDetailScreen() {
           </View>
           <StatusBadge status={booking.status} />
         </View>
+        {booking.status === "CANCELLED" && booking.cancellationReason && (
+          <View style={styles.cancelReasonRow}>
+            <Text style={styles.cancelReasonLabel}>Motivo: </Text>
+            <Text style={styles.cancelReasonText}>{booking.cancellationReason}</Text>
+          </View>
+        )}
       </Surface>
 
       {/* Client info */}
@@ -175,7 +200,7 @@ export default function AdminBookingDetailScreen() {
           </Button>
           <Button
             mode="outlined"
-            onPress={() => setDialog("cancel")}
+            onPress={openCancelDialog}
             loading={acting}
             style={[styles.actionBtn, { flex: 1 }]}
             textColor="#ef4444"
@@ -203,8 +228,38 @@ export default function AdminBookingDetailScreen() {
       <Dialog visible={dialog === "cancel"} onDismiss={() => setDialog(null)}
         style={{ backgroundColor: "#17191f" }}>
         <Dialog.Title style={{ color: "#fff" }}>Cancelar marcação</Dialog.Title>
-        <Dialog.Content>
-          <Text style={{ color: "#9ca3af" }}>Tens a certeza que pretendes cancelar esta marcação?</Text>
+        <Dialog.Content style={{ gap: 12 }}>
+          <Text style={{ color: "#9ca3af", marginBottom: 4 }}>Seleciona o motivo do cancelamento:</Text>
+          {CANCEL_REASONS.map((reason) => (
+            <TouchableOpacity
+              key={reason}
+              style={[
+                styles.reasonOption,
+                selectedReason === reason && styles.reasonOptionSelected,
+              ]}
+              onPress={() => setSelectedReason(reason)}
+            >
+              <View style={[styles.radio, selectedReason === reason && styles.radioSelected]} />
+              <Text style={[
+                styles.reasonText,
+                selectedReason === reason && styles.reasonTextSelected,
+              ]}>
+                {reason}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {selectedReason === "Outro" && (
+            <TextInput
+              mode="outlined"
+              label="Descreve o motivo"
+              value={customReason}
+              onChangeText={setCustomReason}
+              placeholder="Motivo personalizado..."
+              style={{ marginTop: 4 }}
+              outlineColor="#2a2d35"
+              activeOutlineColor="#ef4444"
+            />
+          )}
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={() => setDialog(null)} textColor="#9ca3af">Não</Button>
@@ -237,6 +292,9 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   timeText: { color: "#fff", fontFamily: "Outfit_700Bold", fontSize: 20, marginTop: 2 },
+  cancelReasonRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  cancelReasonLabel: { color: "#ef4444", fontFamily: "Outfit_600SemiBold", fontSize: 12 },
+  cancelReasonText: { color: "#9ca3af", fontFamily: "Outfit_400Regular", fontSize: 12, flex: 1 },
   label: { color: "#6b7280", fontFamily: "Outfit_600SemiBold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
   divider: { backgroundColor: "#2a2d35" },
   clientName: { color: "#fff", fontFamily: "Outfit_600SemiBold", fontSize: 16 },
@@ -250,4 +308,38 @@ const styles = StyleSheet.create({
   noteText: { color: "#fff", fontFamily: "Outfit_400Regular", fontSize: 13, lineHeight: 19 },
   actions: { flexDirection: "row", gap: 10 },
   actionBtn: { borderRadius: 10 },
+  reasonOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2a2d35",
+  },
+  reasonOptionSelected: {
+    borderColor: "#ef4444",
+    backgroundColor: "rgba(239,68,68,0.08)",
+  },
+  radio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: "#4b5563",
+  },
+  radioSelected: {
+    borderColor: "#ef4444",
+    backgroundColor: "#ef4444",
+  },
+  reasonText: {
+    color: "#9ca3af",
+    fontFamily: "Outfit_400Regular",
+    fontSize: 14,
+  },
+  reasonTextSelected: {
+    color: "#fff",
+    fontFamily: "Outfit_600SemiBold",
+  },
 })

@@ -122,11 +122,11 @@ export const adminRouter = router({
     }),
 
   cancelBooking: adminProcedure
-    .input(z.object({ bookingId: z.string() }))
+    .input(z.object({ bookingId: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
       await db.booking.update({
         where: { id: input.bookingId },
-        data: { status: "CANCELLED" },
+        data: { status: "CANCELLED", cancellationReason: input.reason ?? null },
       })
       void sendBookingNotification(input.bookingId, "booking_cancellation")
     }),
