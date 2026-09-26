@@ -1,0 +1,8 @@
+{
+  "build": {
+    "buildCommand": "cd .. && pnpm install --frozen-lockfile && pnpm --filter @barberlab/db build && pnpm --filter @barberlab/trpc build && pnpm --filter @barberlab/backend build"
+  },
+  "deploy": {
+    "startCommand": "node dist/index.js"
+  }
+}

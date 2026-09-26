@@ -2,9 +2,18 @@
   "name": "@barberlab/trpc",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./browser": "./src/browser.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./browser": {
+      "import": "./dist/browser.js",
+      "types": "./dist/browser.d.ts",
+      "default": "./src/browser.ts"
+    }
   },
   "dependencies": {
     "@barberlab/db": "workspace:*",
@@ -14,9 +23,13 @@
     "nodemailer": "^9.0.5",
     "zod": "^3.23.8"
   },
+  "scripts": {
+    "build": "tsup src/index.ts src/browser.ts --format esm --dts"
+  },
   "devDependencies": {
     "@barberlab/config": "workspace:*",
     "@types/nodemailer": "^8.0.1",
+    "tsup": "^8.0.0",
     "typescript": "^5.9.3"
   }
 }

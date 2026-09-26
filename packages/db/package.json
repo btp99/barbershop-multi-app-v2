@@ -2,10 +2,16 @@
   "name": "@barberlab/db",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
   },
   "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
@@ -22,6 +28,7 @@
     "@types/pg": "^8.16.0",
     "dotenv": "^17.4.2",
     "prisma": "^7.4.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
