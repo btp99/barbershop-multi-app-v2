@@ -9,6 +9,7 @@ import {
   Share,
 } from "react-native"
 import { Button, Surface, Divider, ActivityIndicator } from "react-native-paper"
+import { useRouter } from "expo-router"
 import { format } from "date-fns"
 import { pt } from "date-fns/locale"
 import { trpc } from "../../lib/trpc"
@@ -23,7 +24,8 @@ interface Me {
 }
 
 export default function ProfileScreen() {
-  const { token, signIn, signOut } = useAuth()
+  const { token, signOut } = useAuth()
+  const router = useRouter()
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -44,10 +46,10 @@ export default function ProfileScreen() {
       <View style={styles.center}>
         <Text style={styles.title}>A tua conta</Text>
         <Text style={styles.sub}>
-          Inicia sessão para acederes ao teu perfil e marcações. O teu nome e e-mail do Google serão guardados para associar as tuas marcações.
+          Inicia sessão para acederes ao teu perfil e marcações.
         </Text>
-        <Button mode="contained" onPress={() => void signIn()} style={{ marginTop: 20 }}>
-          Iniciar sessão com Google
+        <Button mode="contained" onPress={() => router.push("/sign-in")} style={{ marginTop: 20 }}>
+          Entrar
         </Button>
       </View>
     )

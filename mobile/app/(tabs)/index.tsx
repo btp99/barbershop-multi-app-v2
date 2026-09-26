@@ -40,7 +40,7 @@ export default function HomeScreen() {
   const [shop, setShop] = useState<Shop>(null)
   const [loading, setLoading] = useState(true)
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
-  const { token, signIn, user, isLoading: authLoading } = useAuth()
+  const { token, user, isLoading: authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const handleBook = () => {
     if (!selectedServiceId) return
     if (!token) {
-      void signIn()
+      router.push("/sign-in")
       return
     }
     router.push({ pathname: "/booking", params: { serviceId: selectedServiceId } })

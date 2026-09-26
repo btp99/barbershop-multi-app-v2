@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@barberlab/trpc": "workspace:*",
+    "better-auth": "^1.2.7",
     "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/vector-icons": "^14.0.4",
     "@trpc/client": "^11.0.0",

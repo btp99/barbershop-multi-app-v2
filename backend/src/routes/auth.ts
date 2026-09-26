@@ -1,75 +1,60 @@
 import type { FastifyInstance } from "fastify"
 import { OAuth2Client } from "google-auth-library"
 import { db } from "@barberlab/db"
-import { signToken } from "../auth"
+import { randomBytes } from "crypto"
 
-const googleClient = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-)
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 type IdTokenBody = { idToken: string }
-type CodeBody = { code: string; codeVerifier: string; redirectUri: string }
+
+// Creates a better-auth session token directly in the DB.
+// This lets native mobile clients exchange a Google ID token for a session
+// without going through the browser OAuth redirect flow.
+async function createSession(userId: string, ip: string, userAgent: string): Promise<string> {
+  const token = randomBytes(32).toString("hex")
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  const now = new Date()
+  const id = randomBytes(16).toString("hex")
+
+  await db.session.create({
+    data: { id, token, userId, expiresAt, ipAddress: ip, userAgent, createdAt: now, updatedAt: now },
+  })
+
+  return token
+}
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post<{ Body: IdTokenBody | CodeBody }>("/auth/google", async (req, reply) => {
-    let idToken: string | undefined
-
-    if ("idToken" in req.body) {
-      idToken = req.body.idToken
-    } else if ("code" in req.body) {
-      const { code, codeVerifier, redirectUri } = req.body
-      try {
-        const { tokens } = await googleClient.getToken({
-          code,
-          codeVerifier,
-          redirect_uri: redirectUri,
-        })
-        idToken = tokens.id_token ?? undefined
-      } catch (err) {
-        console.error("[auth] Code exchange failed:", err)
-        return reply.status(401).send({ error: "Code exchange failed" })
-      }
-    }
-
-    if (!idToken) {
-      return reply.status(400).send({ error: "idToken is required" })
-    }
+  app.post<{ Body: IdTokenBody }>("/auth/google", async (req, reply) => {
+    const { idToken } = req.body
+    if (!idToken) return reply.status(400).send({ error: "idToken is required" })
 
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken,
         audience: process.env.GOOGLE_CLIENT_ID,
       })
-
       const gPayload = ticket.getPayload()
-      if (!gPayload?.email) {
-        return reply.status(401).send({ error: "Invalid Google token" })
-      }
+      if (!gPayload?.email) return reply.status(401).send({ error: "Invalid Google token" })
 
       const user = await db.user.upsert({
         where: { email: gPayload.email },
-        update: {
-          name: gPayload.name ?? null,
-          image: gPayload.picture ?? null,
-        },
+        update: { name: gPayload.name ?? null, image: gPayload.picture ?? null, emailVerified: true },
         create: {
           email: gPayload.email,
           name: gPayload.name ?? null,
           image: gPayload.picture ?? null,
-          emailVerified: new Date(),
+          emailVerified: true,
         },
       })
 
-      const accessToken = await signToken({
-        id: user.id,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      })
+      const ip = req.ip ?? ""
+      const ua = (req.headers["user-agent"] as string | undefined) ?? ""
+      const token = await createSession(user.id, ip, ua)
 
-      return reply.send({ accessToken })
+      reply.header("set-auth-token", token)
+      return reply.send({ accessToken: token })
     } catch (err) {
-      console.error("[auth] Google token verification failed:", err)
+      console.error("[auth/google] verification failed:", err)
       return reply.status(401).send({ error: "Invalid Google token" })
     }
   })

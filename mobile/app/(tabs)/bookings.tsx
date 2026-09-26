@@ -7,7 +7,7 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native"
-import { useFocusEffect } from "expo-router"
+import { useRouter, useFocusEffect } from "expo-router"
 import { ActivityIndicator, Button, SegmentedButtons } from "react-native-paper"
 import { trpc } from "../../lib/trpc"
 import { useAuth } from "../../context/AuthContext"
@@ -30,7 +30,8 @@ interface Booking {
 }
 
 export default function BookingsScreen() {
-  const { token, signIn } = useAuth()
+  const { token } = useAuth()
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>("confirmed")
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,8 +72,8 @@ export default function BookingsScreen() {
       <View style={styles.center}>
         <Text style={styles.title}>As tuas marcações</Text>
         <Text style={styles.sub}>Inicia sessão para veres as tuas marcações.</Text>
-        <Button mode="contained" onPress={() => void signIn()} style={{ marginTop: 16 }}>
-          Iniciar sessão com Google
+        <Button mode="contained" onPress={() => router.push("/sign-in")} style={{ marginTop: 16 }}>
+          Entrar
         </Button>
       </View>
     )
