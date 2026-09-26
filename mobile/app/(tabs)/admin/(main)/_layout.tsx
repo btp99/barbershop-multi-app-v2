@@ -1,16 +1,14 @@
 import { Tabs } from "expo-router"
 import { useTheme } from "react-native-paper"
 import {
-  HomeIcon,
   CalendarDaysIcon,
-  UserIcon,
-  ShieldCheckIcon,
+  UsersIcon,
+  BarChartIcon,
+  SettingsIcon,
 } from "lucide-react-native"
-import { useAuth } from "../../context/AuthContext"
 
-export default function TabsLayout() {
+export default function AdminTabsLayout() {
   const { colors } = useTheme()
-  const { user, isLoading } = useAuth()
 
   return (
     <Tabs
@@ -34,42 +32,40 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="calendar"
         options={{
-          title: "Início",
-          tabBarIcon: ({ color, size }) => (
-            <HomeIcon size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          title: "Marcações",
+          title: "Calendário",
+          tabBarLabel: "Início",
           tabBarIcon: ({ color, size }) => (
             <CalendarDaysIcon size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="clients"
         options={{
-          title: "Perfil",
+          title: "Clientes",
           tabBarIcon: ({ color, size }) => (
-            <UserIcon size={size} color={color} />
+            <UsersIcon size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="admin"
+        name="stats"
         options={{
-          href: !isLoading && user?.isAdmin ? undefined : null,
-          title: "Admin",
+          title: "Estatísticas",
           tabBarIcon: ({ color, size }) => (
-            <ShieldCheckIcon size={size} color={color} />
+            <BarChartIcon size={size} color={color} />
           ),
-          headerShown: false,
-          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Definições",
+          tabBarIcon: ({ color, size }) => (
+            <SettingsIcon size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

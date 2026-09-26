@@ -27,16 +27,14 @@ export default function AdminLayout() {
         contentStyle: { backgroundColor: "#111216" },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Painel Admin" }} />
-      <Stack.Screen name="calendar" options={{ title: "Calendário" }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(main)" options={{ headerShown: false }} />
       <Stack.Screen name="booking/new" options={{ title: "Nova Marcação" }} />
       <Stack.Screen name="booking/[id]" options={{ title: "Marcação" }} />
-      <Stack.Screen name="clients" options={{ title: "Clientes" }} />
       <Stack.Screen name="client/[id]" options={{ title: "Cliente" }} />
       <Stack.Screen name="services" options={{ title: "Serviços" }} />
       <Stack.Screen name="hours" options={{ title: "Horário" }} />
-      <Stack.Screen name="stats" options={{ title: "Estatísticas" }} />
-      <Stack.Screen name="settings" options={{ title: "Definições" }} />
+      <Stack.Screen name="shop" options={{ title: "Barbearia" }} />
     </Stack>
   )
 }

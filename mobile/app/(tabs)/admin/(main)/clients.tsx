@@ -17,7 +17,7 @@ import {
   TextInput,
 } from "react-native-paper"
 import { PlusIcon } from "lucide-react-native"
-import { trpc } from "../../../lib/trpc"
+import { trpc } from "../../../../lib/trpc"
 
 interface Client {
   id: string
@@ -66,7 +66,7 @@ export default function AdminClientsScreen() {
       setForm({ name: "", phone: "", email: "", notes: "" })
       load(search)
     } catch {
-      // silently fail; could show an alert
+      // silently fail
     } finally {
       setSaving(false)
     }

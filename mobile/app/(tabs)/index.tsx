@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native"
-import { useRouter } from "expo-router"
+import { useRouter, Redirect } from "expo-router"
 import { ActivityIndicator, Surface, Chip } from "react-native-paper"
 import {
   MapPinIcon,
@@ -40,16 +40,21 @@ export default function HomeScreen() {
   const [shop, setShop] = useState<Shop>(null)
   const [loading, setLoading] = useState(true)
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
-  const { token, signIn } = useAuth()
+  const { token, signIn, user, isLoading: authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
+    if (authLoading || user?.isAdmin) return
     trpc.shop.get
       .query()
       .then((s) => setShop(s))
       .catch((err) => console.error("[home]", err))
       .finally(() => setLoading(false))
-  }, [])
+  }, [authLoading, user?.isAdmin])
+
+  if (!authLoading && user?.isAdmin) {
+    return <Redirect href="/(tabs)/admin/calendar" />
+  }
 
   const handleBook = () => {
     if (!selectedServiceId) return

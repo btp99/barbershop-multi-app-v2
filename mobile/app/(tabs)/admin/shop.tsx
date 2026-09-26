@@ -20,7 +20,7 @@ interface ShopForm {
   amenities: string
 }
 
-export default function AdminSettingsScreen() {
+export default function AdminShopScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<ShopForm>({

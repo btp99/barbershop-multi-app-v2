@@ -12,9 +12,9 @@ import { ActivityIndicator, FAB, Portal, Dialog, Button, TextInput } from "react
 import { Calendar } from "react-native-calendars"
 import { format, getDaysInMonth } from "date-fns"
 import { pt } from "date-fns/locale"
-import { trpc } from "../../../lib/trpc"
-import { BookingCard } from "../../../components/BookingCard"
-import { calendarTheme } from "../../../theme"
+import { trpc } from "../../../../lib/trpc"
+import { BookingCard } from "../../../../components/BookingCard"
+import { calendarTheme } from "../../../../theme"
 import { PlusIcon } from "lucide-react-native"
 
 function localDateStr(d: Date) {
@@ -35,7 +35,6 @@ export default function AdminCalendarScreen() {
   const [dayBlocks, setDayBlocks] = useState<any[]>([])
   const [loadingCounts, setLoadingCounts] = useState(true)
   const [loadingDay, setLoadingDay] = useState(false)
-  const [fabOpen, setFabOpen] = useState(false)
   const [blockDialog, setBlockDialog] = useState(false)
   const [blockForm, setBlockForm] = useState({ startTime: "", endTime: "", reason: "" })
   const [savingBlock, setSavingBlock] = useState(false)
@@ -68,7 +67,6 @@ export default function AdminCalendarScreen() {
 
   useEffect(() => { void loadDay(selectedDate) }, [selectedDate, loadDay])
 
-  // Build markedDates with dots for days with bookings
   const markedDates: Record<string, any> = {}
   const days = getDaysInMonth(new Date(currentMonth.year, currentMonth.month - 1))
   for (let i = 1; i <= days; i++) {
@@ -121,7 +119,6 @@ export default function AdminCalendarScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#111216" }}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Calendar */}
         <Calendar
           current={`${currentMonth.year}-${String(currentMonth.month).padStart(2, "0")}-01`}
           onDayPress={(day) => setSelectedDate(day.dateString)}
@@ -134,12 +131,10 @@ export default function AdminCalendarScreen() {
           style={styles.calendar}
         />
 
-        {/* Selected day header */}
         <Text style={styles.dayHeader}>
           {format(new Date(selectedDate + "T00:00:00"), "EEEE, d 'de' MMMM", { locale: pt })}
         </Text>
 
-        {/* Time blocks for selected day */}
         {dayBlocks.length > 0 && (
           <View style={styles.blockSection}>
             <Text style={styles.blockTitle}>Bloqueios</Text>
@@ -161,7 +156,6 @@ export default function AdminCalendarScreen() {
           </View>
         )}
 
-        {/* Bookings for selected day */}
         {loadingDay ? (
           <ActivityIndicator color="#18B549" style={{ marginTop: 8 }} />
         ) : (() => {
@@ -258,7 +252,6 @@ export default function AdminCalendarScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB group */}
       <FAB
         icon={() => <PlusIcon size={20} color="#fff" />}
         label="Nova marcação"
@@ -272,7 +265,6 @@ export default function AdminCalendarScreen() {
         color="#fff"
       />
 
-      {/* Add time block dialog */}
       <Portal>
         <Dialog
           visible={blockDialog}

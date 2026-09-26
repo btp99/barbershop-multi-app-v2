@@ -4,7 +4,7 @@ import { useFocusEffect } from "expo-router"
 import { ActivityIndicator, Surface } from "react-native-paper"
 import { format, getDaysInMonth } from "date-fns"
 import { pt } from "date-fns/locale"
-import { trpc } from "../../../lib/trpc"
+import { trpc } from "../../../../lib/trpc"
 
 export default function AdminStatsScreen() {
   const today = new Date()
@@ -48,7 +48,6 @@ export default function AdminStatsScreen() {
         {format(today, "MMMM 'de' yyyy", { locale: pt })}
       </Text>
 
-      {/* Summary */}
       <View style={styles.statsRow}>
         <Surface style={styles.statCard} elevation={0}>
           <Text style={styles.statNumber}>{total}</Text>
@@ -60,7 +59,6 @@ export default function AdminStatsScreen() {
         </Surface>
       </View>
 
-      {/* Per-day chart */}
       <Text style={styles.sectionTitle}>Por dia</Text>
 
       {total === 0 ? (
