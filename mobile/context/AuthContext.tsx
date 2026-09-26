@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import * as Google from "expo-auth-session/providers/google"
 import * as WebBrowser from "expo-web-browser"
-import { Platform } from "react-native"
+import { Alert, Platform } from "react-native"
 import { getToken, setToken, clearToken, decodeToken } from "../lib/auth"
 
 WebBrowser.maybeCompleteAuthSession()
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const [, response, promptAsync] = Google.useAuthRequest({
+  const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
   })
 
@@ -90,7 +90,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (response?.type === "success") {
       const idToken = response.authentication?.idToken
-      if (idToken) void exchangeIdToken(idToken)
+      if (idToken) {
+        void exchangeIdToken(idToken)
+      } else {
+        Alert.alert("Erro", "Token do Google não encontrado. Tenta novamente.")
+      }
+    } else if (response?.type === "error") {
+      Alert.alert(
+        "Erro de autenticação",
+        response.error?.message ?? "Não foi possível iniciar sessão com o Google."
+      )
     }
   }, [response])
 
@@ -109,10 +118,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async () => {
     if (Platform.OS === "web") {
-      await webSignIn()
+      try {
+        await webSignIn()
+      } catch (err) {
+        Alert.alert(
+          "Erro",
+          `Não foi possível autenticar: ${err instanceof Error ? err.message : "Erro desconhecido"}`
+        )
+      }
       return
     }
-    await promptAsync()
+    if (!request) {
+      Alert.alert("Aguarda", "A autenticação ainda não está pronta. Tenta novamente em instantes.")
+      return
+    }
+    try {
+      await promptAsync()
+    } catch (err) {
+      Alert.alert(
+        "Erro",
+        `${err instanceof Error ? err.message : "Não foi possível abrir a janela de autenticação."}`
+      )
+    }
   }
 
   const signOut = async () => {
